@@ -23,8 +23,15 @@ builder.Services.AddOpenApi();
 
 builder.Services.AddValidatorsFromAssemblyContaining<CreateProductValidator>();
 
+//automatically included w above thing
+//builder.Services.AddValidatorsFromAssemblyContaining<CreateCustomerValidator>();
+//...
+
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
 builder.Services.AddScoped<IProductService, ProductService>();
+
+builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
+builder.Services.AddScoped<ICustomerService, CustomerService>();
 
 var app = builder.Build();
 
