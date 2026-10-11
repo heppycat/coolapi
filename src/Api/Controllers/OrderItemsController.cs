@@ -1,11 +1,14 @@
 using Application.DTOs;
 using Application.Interfaces;
+using Core.Entities;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Api.Controllers;
 
 [ApiController]
 [Route("api/orders/{orderId}/items")]
+[Authorize]
 public class OrderItemsController : ControllerBase
 {
     private readonly IOrderItemService _orderItemService;
@@ -53,6 +56,7 @@ public class OrderItemsController : ControllerBase
     }
 
     // DELETE: api/orders/5/items/3
+    [Authorize(Roles = nameof(UserRole.Admin))]
     [HttpDelete("{id}")]
     public async Task<ActionResult> Delete(int orderId, int id)
     {

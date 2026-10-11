@@ -1,11 +1,14 @@
 using Application.DTOs;
 using Application.Interfaces;
+using Core.Entities;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class CustomersController : ControllerBase
 {
     private readonly ICustomerService _customerService;
@@ -34,6 +37,7 @@ public class CustomersController : ControllerBase
     }
 
     // POST api/<CustomersController>
+    [Authorize(Roles = nameof(UserRole.Admin))]
     [HttpPost]
     public async Task<ActionResult<CustomerDto>> Post([FromBody] CreateCustomerDto dto)
     {
@@ -41,6 +45,7 @@ public class CustomersController : ControllerBase
         return CreatedAtAction(nameof(Get), new { id = created.Id }, created);
     }
 
+    [Authorize(Roles = nameof(UserRole.Admin))]
     [HttpPut("{id}")]
     public async Task<ActionResult> Put(int id, [FromBody] UpdateCustomerDto dto)
     {
@@ -55,6 +60,7 @@ public class CustomersController : ControllerBase
         }
     }
 
+    [Authorize(Roles = nameof(UserRole.Admin))]
     [HttpDelete("{id}")]
     public async Task<ActionResult> Delete(int id)
     {

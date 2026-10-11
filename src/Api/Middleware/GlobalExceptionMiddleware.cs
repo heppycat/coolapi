@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text.Json;
+using Application.Exceptions;
 using FluentValidation;
 
 namespace Api.Middleware;
@@ -41,6 +42,8 @@ public class GlobalExceptionMiddleware
         {
             ValidationException => (int)HttpStatusCode.BadRequest,
             KeyNotFoundException => (int)HttpStatusCode.NotFound,
+            ConflictException => (int)HttpStatusCode.Conflict,
+            AuthenticationFailedException => (int)HttpStatusCode.Unauthorized,
             _ => (int)HttpStatusCode.InternalServerError,
         };
 
