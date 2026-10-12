@@ -14,8 +14,16 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Host.UseSerilog(
+    (context, services, configuration) =>
+        configuration
+            .ReadFrom.Configuration(context.Configuration)
+            .ReadFrom.Services(services)
+);
 
 // Add services to the container.
 
@@ -99,6 +107,8 @@ if (!string.IsNullOrWhiteSpace(seedEmail) && !string.IsNullOrWhiteSpace(seedPass
         await users.AddAsync(admin);
     }
 }
+
+app.UseSerilogRequestLogging();
 
 app.UseMiddleware<GlobalExceptionMiddleware>();
 
