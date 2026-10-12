@@ -45,6 +45,7 @@ public class OrdersController : ControllerBase
     }
 
     // PUT: api/orders/5  (changes the status)
+    [Authorize(Roles = nameof(UserRole.Admin))]
     [HttpPut("{id}")]
     public async Task<ActionResult> Put(int id, [FromBody] UpdateOrderDto dto)
     {
