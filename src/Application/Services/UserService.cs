@@ -20,6 +20,7 @@ public class UserService : IUserService
             Id = u.Id,
             Email = u.Email,
             Role = u.Role,
+            CustomerId = u.CustomerId,
         });
     }
 
@@ -33,6 +34,7 @@ public class UserService : IUserService
                 Id = user.Id,
                 Email = user.Email,
                 Role = user.Role,
+                CustomerId = user.CustomerId,
             };
     }
 

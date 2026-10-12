@@ -9,6 +9,7 @@ namespace Application.Services;
 public class AuthService : IAuthService
 {
     private readonly IUserRepository _repository;
+    private readonly ICustomerRepository _customers;
     private readonly IPasswordService _passwords;
     private readonly IJwtTokenGenerator _tokens;
     private readonly IValidator<RegisterDto> _registerValidator;
@@ -16,6 +17,7 @@ public class AuthService : IAuthService
 
     public AuthService(
         IUserRepository repository,
+        ICustomerRepository customers,
         IPasswordService passwords,
         IJwtTokenGenerator tokens,
         IValidator<RegisterDto> registerValidator,
@@ -23,6 +25,7 @@ public class AuthService : IAuthService
     )
     {
         _repository = repository;
+        _customers = customers;
         _passwords = passwords;
         _tokens = tokens;
         _registerValidator = registerValidator;
@@ -37,8 +40,18 @@ public class AuthService : IAuthService
         if (await _repository.GetByEmailAsync(email) != null)
             throw new ConflictException("Email is already registered.");
 
-        // self-registration can only ever create a plain User; admins are promoted separately
-        var user = new User { Email = email, Role = UserRole.User };
+        // an existing customer record may belong to someone else; never auto-link by email
+        if (await _customers.GetByEmailAsync(email) != null)
+            throw new ConflictException("Email is already registered.");
+
+        // self-registration can only ever create a plain User; admins are promoted separately.
+        // Each user gets their own customer, saved together with the user.
+        var user = new User
+        {
+            Email = email,
+            Role = UserRole.User,
+            Customer = new Customer { Name = email, Email = email },
+        };
         user.PasswordHash = _passwords.Hash(user, dto.Password);
 
         await _repository.AddAsync(user);
@@ -71,6 +84,7 @@ public class AuthService : IAuthService
                 Id = user.Id,
                 Email = user.Email,
                 Role = user.Role,
+                CustomerId = user.CustomerId,
             },
         };
     }

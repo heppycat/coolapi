@@ -8,15 +8,18 @@ namespace Application.Services;
 public class CustomerService : ICustomerService
 {
     private readonly ICustomerRepository _repository;
+    private readonly ICurrentUser _currentUser;
 
     private readonly IValidator<CreateCustomerDto> _createValidator;
 
     public CustomerService(
         ICustomerRepository repository,
+        ICurrentUser currentUser,
         IValidator<CreateCustomerDto> createValidator
     )
     {
         _repository = repository;
+        _currentUser = currentUser;
         _createValidator = createValidator;
     }
 
@@ -27,7 +30,9 @@ public class CustomerService : ICustomerService
 
         //business logic later ...
 
-        return customers.Select(p => new CustomerDto
+        return customers
+            .Where(c => _currentUser.CanAccessCustomer(c.Id))
+            .Select(p => new CustomerDto
         {
             Id = p.Id,
             Name = p.Name,
@@ -38,7 +43,8 @@ public class CustomerService : ICustomerService
     public async Task<CustomerDto?> GetCustomerByIdAsync(int id)
     {
         var customer = await _repository.GetByIdAsync(id);
-        return customer == null
+        // customers you can't access look the same as ones that don't exist
+        return customer == null || !_currentUser.CanAccessCustomer(customer.Id)
             ? null
             : new CustomerDto
             {

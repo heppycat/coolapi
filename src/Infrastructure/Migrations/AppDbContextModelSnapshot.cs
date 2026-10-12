@@ -137,6 +137,9 @@ namespace Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<int?>("CustomerId")
+                        .HasColumnType("integer");
+
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasMaxLength(254)
@@ -152,6 +155,9 @@ namespace Infrastructure.Migrations
                         .HasColumnType("character varying(20)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CustomerId")
+                        .IsUnique();
 
                     b.HasIndex("Email")
                         .IsUnique();
@@ -187,6 +193,16 @@ namespace Infrastructure.Migrations
                     b.Navigation("Order");
 
                     b.Navigation("Product");
+                });
+
+            modelBuilder.Entity("Core.Entities.User", b =>
+                {
+                    b.HasOne("Core.Entities.Customer", "Customer")
+                        .WithMany()
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Customer");
                 });
 
             modelBuilder.Entity("Core.Entities.Customer", b =>

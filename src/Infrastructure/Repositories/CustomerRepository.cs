@@ -21,6 +21,9 @@ public class CustomerRepository : ICustomerRepository
 
     public async Task<Customer?> GetByIdAsync(int id) => await _context.Customers.FindAsync(id);
 
+    public async Task<Customer?> GetByEmailAsync(string email) =>
+        await _context.Customers.FirstOrDefaultAsync(c => c.Email == email);
+
     public async Task AddAsync(Customer customer)
     {
         await _context.Customers.AddAsync(customer);

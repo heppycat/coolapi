@@ -1,3 +1,4 @@
+using Api;
 using Api.Middleware;
 using Application.Interfaces;
 using Application.Services;
@@ -44,6 +45,9 @@ builder.Services.AddScoped<IOrderService, OrderService>();
 
 builder.Services.AddScoped<IOrderItemRepository, OrderItemRepository>();
 builder.Services.AddScoped<IOrderItemService, OrderItemService>();
+
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICurrentUser, CurrentUser>();
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserService, UserService>();

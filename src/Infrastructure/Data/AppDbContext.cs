@@ -32,6 +32,14 @@ public class AppDbContext : DbContext
             entity.HasIndex(e => e.Email).IsUnique();
             entity.Property(e => e.PasswordHash).IsRequired();
             entity.Property(e => e.Role).HasConversion<string>().HasMaxLength(20);
+            entity.HasIndex(e => e.CustomerId).IsUnique();
+
+            // one customer per user; deleting the customer just unlinks the user
+            entity
+                .HasOne(e => e.Customer)
+                .WithMany()
+                .HasForeignKey(e => e.CustomerId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         modelBuilder.Entity<Customer>(entity =>

@@ -8,6 +8,7 @@ namespace Application.Services;
 public class OrderService : IOrderService
 {
     private readonly IOrderRepository _repository;
+    private readonly ICurrentUser _currentUser;
     private readonly ICustomerRepository _customerRepository;
     private readonly IProductRepository _productRepository;
     private readonly IValidator<CreateOrderDto> _createValidator;
@@ -15,6 +16,7 @@ public class OrderService : IOrderService
 
     public OrderService(
         IOrderRepository repository,
+        ICurrentUser currentUser,
         ICustomerRepository customerRepository,
         IProductRepository productRepository,
         IValidator<CreateOrderDto> createValidator,
@@ -22,6 +24,7 @@ public class OrderService : IOrderService
     )
     {
         _repository = repository;
+        _currentUser = currentUser;
         _customerRepository = customerRepository;
         _productRepository = productRepository;
         _createValidator = createValidator;
@@ -31,17 +34,26 @@ public class OrderService : IOrderService
     public async Task<IEnumerable<OrderDto>> GetAllOrdersAsync()
     {
         var orders = await _repository.GetAllAsync();
-        return orders.Select(ToDto);
+        return orders.Where(o => _currentUser.CanAccessCustomer(o.CustomerId)).Select(ToDto);
     }
 
     public async Task<OrderDto?> GetOrderByIdAsync(int id)
     {
         var order = await _repository.GetByIdAsync(id);
-        return order == null ? null : ToDto(order);
+        // orders you can't access look the same as ones that don't exist
+        return order == null || !_currentUser.CanAccessCustomer(order.CustomerId)
+            ? null
+            : ToDto(order);
     }
 
     public async Task<OrderDto> CreateOrderAsync(CreateOrderDto dto)
     {
+        // non-admins can only order for themselves, whatever the request says
+        if (!_currentUser.IsAdmin)
+            dto.CustomerId =
+                _currentUser.CustomerId
+                ?? throw new KeyNotFoundException("Customer not found.");
+
         await _createValidator.ValidateAndThrowAsync(dto);
 
         var customer = await _customerRepository.GetByIdAsync(dto.CustomerId);
@@ -80,7 +92,7 @@ public class OrderService : IOrderService
         await _updateValidator.ValidateAndThrowAsync(dto);
 
         var order = await _repository.GetByIdAsync(id);
-        if (order == null)
+        if (order == null || !_currentUser.CanAccessCustomer(order.CustomerId))
             throw new KeyNotFoundException("Order not found.");
 
         order.Status = dto.Status;

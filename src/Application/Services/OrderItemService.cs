@@ -8,6 +8,7 @@ namespace Application.Services;
 public class OrderItemService : IOrderItemService
 {
     private readonly IOrderItemRepository _repository;
+    private readonly ICurrentUser _currentUser;
     private readonly IOrderRepository _orderRepository;
     private readonly IProductRepository _productRepository;
     private readonly IValidator<CreateOrderItemDto> _createValidator;
@@ -15,6 +16,7 @@ public class OrderItemService : IOrderItemService
 
     public OrderItemService(
         IOrderItemRepository repository,
+        ICurrentUser currentUser,
         IOrderRepository orderRepository,
         IProductRepository productRepository,
         IValidator<CreateOrderItemDto> createValidator,
@@ -22,6 +24,7 @@ public class OrderItemService : IOrderItemService
     )
     {
         _repository = repository;
+        _currentUser = currentUser;
         _orderRepository = orderRepository;
         _productRepository = productRepository;
         _createValidator = createValidator;
@@ -37,6 +40,7 @@ public class OrderItemService : IOrderItemService
 
     public async Task<OrderItemDto?> GetOrderItemByIdAsync(int orderId, int id)
     {
+        await GetOrderOrThrowAsync(orderId); // also enforces ownership
         var item = await _repository.GetByIdAsync(id);
         // an item only "exists" under the order it belongs to
         return item == null || item.OrderId != orderId ? null : ToDto(item);
@@ -92,7 +96,7 @@ public class OrderItemService : IOrderItemService
     private async Task<Order> GetOrderOrThrowAsync(int orderId)
     {
         var order = await _orderRepository.GetByIdAsync(orderId);
-        if (order == null)
+        if (order == null || !_currentUser.CanAccessCustomer(order.CustomerId))
             throw new KeyNotFoundException("Order not found.");
         return order;
     }
