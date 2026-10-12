@@ -91,6 +91,30 @@ builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
+// dev convenience: apply migrations and add sample data on first run
+if (app.Environment.IsDevelopment())
+{
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    await db.Database.MigrateAsync();
+    if (!await db.Products.AnyAsync())
+    {
+        db.Products.AddRange(
+            new Product { Name = "Mechanical Keyboard", Price = 89.99m },
+            new Product { Name = "Wireless Mouse", Price = 34.50m },
+            new Product { Name = "27\" Monitor", Price = 249.00m },
+            new Product { Name = "USB-C Hub", Price = 42.90m },
+            new Product { Name = "Laptop Stand", Price = 29.99m },
+            new Product { Name = "Webcam 1080p", Price = 59.00m }
+        );
+        db.Customers.AddRange(
+            new Customer { Name = "Alice Smith", Email = "alice@example.com" },
+            new Customer { Name = "Bob Jones", Email = "bob@example.com" }
+        );
+        await db.SaveChangesAsync();
+    }
+}
+
 // bootstrap the first admin from config (Seed:AdminEmail / Seed:AdminPassword), only if absent
 var seedEmail = app.Configuration["Seed:AdminEmail"];
 var seedPassword = app.Configuration["Seed:AdminPassword"];
