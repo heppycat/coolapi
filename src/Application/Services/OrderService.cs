@@ -60,12 +60,7 @@ public class OrderService : IOrderService
         if (customer == null)
             throw new KeyNotFoundException("Customer not found.");
 
-        var order = new Order
-        {
-            CustomerId = dto.CustomerId,
-            OrderDate = DateTime.UtcNow,
-            Status = OrderStatus.Pending,
-        };
+        var order = Order.Create(dto.CustomerId);
 
         foreach (var itemDto in dto.Items)
         {
@@ -73,14 +68,7 @@ public class OrderService : IOrderService
             if (product == null)
                 throw new KeyNotFoundException($"Product {itemDto.ProductId} not found.");
 
-            order.Items.Add(
-                new OrderItem
-                {
-                    ProductId = product.Id,
-                    Quantity = itemDto.Quantity,
-                    UnitPrice = product.Price, // snapshot the price at order time
-                }
-            );
+            order.AddItem(product, itemDto.Quantity);
         }
 
         await _repository.AddAsync(order);
@@ -95,7 +83,7 @@ public class OrderService : IOrderService
         if (order == null || !_currentUser.CanAccessCustomer(order.CustomerId))
             throw new KeyNotFoundException("Order not found.");
 
-        order.Status = dto.Status;
+        order.ChangeStatus(dto.Status);
         await _repository.UpdateAsync(order);
     }
 
@@ -119,9 +107,9 @@ public class OrderService : IOrderService
                     ProductId = i.ProductId,
                     Quantity = i.Quantity,
                     UnitPrice = i.UnitPrice,
-                    LineTotal = i.Quantity * i.UnitPrice,
+                    LineTotal = i.LineTotal,
                 })
                 .ToList(),
-            Total = order.Items.Sum(i => i.Quantity * i.UnitPrice),
+            Total = order.Total,
         };
 }

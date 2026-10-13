@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text.Json;
 using Application.Exceptions;
+using Core.Exceptions;
 using FluentValidation;
 
 namespace Api.Middleware;
@@ -41,6 +42,7 @@ public class GlobalExceptionMiddleware
         var statusCode = exception switch
         {
             ValidationException => (int)HttpStatusCode.BadRequest,
+            DomainException => (int)HttpStatusCode.BadRequest,
             KeyNotFoundException => (int)HttpStatusCode.NotFound,
             ConflictException => (int)HttpStatusCode.Conflict,
             AuthenticationFailedException => (int)HttpStatusCode.Unauthorized,
