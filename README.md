@@ -5,7 +5,7 @@ ASP.NET Core (.NET 10) + PostgreSQL. Needs [.NET 10 SDK](https://dotnet.microsof
 ## Run (Windows & Linux)
 
 ```bash
-git clone https://github.com/eqyv/coolapi.git coolApi && cd coolApi
+git clone https://github.com/heppycat/coolapi.git coolApi && cd coolApi
 docker compose up -d
 dotnet run --project src/Api --launch-profile http
 ```
