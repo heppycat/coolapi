@@ -11,18 +11,18 @@ namespace Api.Controllers;
 [Authorize]
 public class OrderItemsController : ControllerBase
 {
-    private readonly IOrderItemService _orderItemService;
+    private readonly IOrderService _orderService;
 
-    public OrderItemsController(IOrderItemService orderItemService)
+    public OrderItemsController(IOrderService orderService)
     {
-        _orderItemService = orderItemService;
+        _orderService = orderService;
     }
 
     // GET: api/orders/5/items
     [HttpGet]
     public async Task<ActionResult<IEnumerable<OrderItemDto>>> GetItems(int orderId)
     {
-        var items = await _orderItemService.GetItemsByOrderIdAsync(orderId);
+        var items = await _orderService.GetItemsAsync(orderId);
         return Ok(items);
     }
 
@@ -30,7 +30,7 @@ public class OrderItemsController : ControllerBase
     [HttpGet("{id}")]
     public async Task<ActionResult<OrderItemDto>> Get(int orderId, int id)
     {
-        var item = await _orderItemService.GetOrderItemByIdAsync(orderId, id);
+        var item = await _orderService.GetItemAsync(orderId, id);
         if (item == null)
             return NotFound();
         return Ok(item);
@@ -43,7 +43,7 @@ public class OrderItemsController : ControllerBase
         [FromBody] CreateOrderItemDto dto
     )
     {
-        var created = await _orderItemService.CreateOrderItemAsync(orderId, dto);
+        var created = await _orderService.AddItemAsync(orderId, dto);
         return CreatedAtAction(nameof(Get), new { orderId, id = created.Id }, created);
     }
 
@@ -51,7 +51,7 @@ public class OrderItemsController : ControllerBase
     [HttpPut("{id}")]
     public async Task<ActionResult> Put(int orderId, int id, [FromBody] UpdateOrderItemDto dto)
     {
-        await _orderItemService.UpdateOrderItemAsync(orderId, id, dto);
+        await _orderService.ChangeItemQuantityAsync(orderId, id, dto);
         return NoContent();
     }
 
@@ -60,7 +60,7 @@ public class OrderItemsController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<ActionResult> Delete(int orderId, int id)
     {
-        await _orderItemService.DeleteOrderItemAsync(orderId, id);
+        await _orderService.RemoveItemAsync(orderId, id);
         return NoContent();
     }
 }

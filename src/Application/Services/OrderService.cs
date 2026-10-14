@@ -13,6 +13,8 @@ public class OrderService : IOrderService
     private readonly IProductRepository _productRepository;
     private readonly IValidator<CreateOrderDto> _createValidator;
     private readonly IValidator<UpdateOrderDto> _updateValidator;
+    private readonly IValidator<CreateOrderItemDto> _createItemValidator;
+    private readonly IValidator<UpdateOrderItemDto> _updateItemValidator;
 
     public OrderService(
         IOrderRepository repository,
@@ -20,7 +22,9 @@ public class OrderService : IOrderService
         ICustomerRepository customerRepository,
         IProductRepository productRepository,
         IValidator<CreateOrderDto> createValidator,
-        IValidator<UpdateOrderDto> updateValidator
+        IValidator<UpdateOrderDto> updateValidator,
+        IValidator<CreateOrderItemDto> createItemValidator,
+        IValidator<UpdateOrderItemDto> updateItemValidator
     )
     {
         _repository = repository;
@@ -29,6 +33,8 @@ public class OrderService : IOrderService
         _productRepository = productRepository;
         _createValidator = createValidator;
         _updateValidator = updateValidator;
+        _createItemValidator = createItemValidator;
+        _updateItemValidator = updateItemValidator;
     }
 
     public async Task<IEnumerable<OrderDto>> GetAllOrdersAsync()
@@ -79,10 +85,7 @@ public class OrderService : IOrderService
     {
         await _updateValidator.ValidateAndThrowAsync(dto);
 
-        var order = await _repository.GetByIdAsync(id);
-        if (order == null || !_currentUser.CanAccessCustomer(order.CustomerId))
-            throw new KeyNotFoundException("Order not found.");
-
+        var order = await GetOrderOrThrowAsync(id);
         order.ChangeStatus(dto.Status);
         await _repository.UpdateAsync(order);
     }
@@ -92,6 +95,59 @@ public class OrderService : IOrderService
         await _repository.DeleteAsync(id);
     }
 
+    public async Task<IEnumerable<OrderItemDto>> GetItemsAsync(int orderId)
+    {
+        var order = await GetOrderOrThrowAsync(orderId);
+        return order.Items.Select(ToDto);
+    }
+
+    public async Task<OrderItemDto?> GetItemAsync(int orderId, int itemId)
+    {
+        var order = await GetOrderOrThrowAsync(orderId);
+        var item = order.FindItem(itemId);
+        return item == null ? null : ToDto(item);
+    }
+
+    public async Task<OrderItemDto> AddItemAsync(int orderId, CreateOrderItemDto dto)
+    {
+        await _createItemValidator.ValidateAndThrowAsync(dto);
+
+        var order = await GetOrderOrThrowAsync(orderId);
+
+        var product = await _productRepository.GetByIdAsync(dto.ProductId);
+        if (product == null)
+            throw new KeyNotFoundException("Product not found.");
+
+        var item = order.AddItem(product, dto.Quantity);
+        await _repository.UpdateAsync(order);
+        return ToDto(item);
+    }
+
+    public async Task ChangeItemQuantityAsync(int orderId, int itemId, UpdateOrderItemDto dto)
+    {
+        await _updateItemValidator.ValidateAndThrowAsync(dto);
+
+        var order = await GetOrderOrThrowAsync(orderId);
+        order.ChangeItemQuantity(itemId, dto.Quantity);
+        await _repository.UpdateAsync(order);
+    }
+
+    public async Task RemoveItemAsync(int orderId, int itemId)
+    {
+        var order = await GetOrderOrThrowAsync(orderId);
+        order.RemoveItem(itemId);
+        await _repository.UpdateAsync(order);
+    }
+
+    // orders you can't access look the same as ones that don't exist
+    private async Task<Order> GetOrderOrThrowAsync(int orderId)
+    {
+        var order = await _repository.GetByIdAsync(orderId);
+        if (order == null || !_currentUser.CanAccessCustomer(order.CustomerId))
+            throw new KeyNotFoundException("Order not found.");
+        return order;
+    }
+
     private static OrderDto ToDto(Order order) =>
         new()
         {
@@ -99,17 +155,18 @@ public class OrderService : IOrderService
             CustomerId = order.CustomerId,
             OrderDate = order.OrderDate,
             Status = order.Status,
-            Items = order
-                .Items.Select(i => new OrderItemDto
-                {
-                    Id = i.Id,
-                    OrderId = i.OrderId,
-                    ProductId = i.ProductId,
-                    Quantity = i.Quantity,
-                    UnitPrice = i.UnitPrice,
-                    LineTotal = i.LineTotal,
-                })
-                .ToList(),
+            Items = order.Items.Select(ToDto).ToList(),
             Total = order.Total,
+        };
+
+    private static OrderItemDto ToDto(OrderItem item) =>
+        new()
+        {
+            Id = item.Id,
+            OrderId = item.OrderId,
+            ProductId = item.ProductId,
+            Quantity = item.Quantity,
+            UnitPrice = item.UnitPrice,
+            LineTotal = item.LineTotal,
         };
 }
